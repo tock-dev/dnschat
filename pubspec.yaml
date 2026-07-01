@@ -1,0 +1,23 @@
+name: dnschat
+description: 'A new Flutter project.'
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  async: ^2.13.1
+  flutter:
+    sdk: flutter
+  nsd: ^5.0.1
+  oktoast: ^3.4.0
+  web_socket: ^1.0.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
