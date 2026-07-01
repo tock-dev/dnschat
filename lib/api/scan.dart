@@ -1,8 +1,11 @@
 import 'dart:async';
-import 'package:dnschat/api/advertise.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import '/api/advertise.dart';
 import 'package:flutter/material.dart';
 import 'package:nsd/nsd.dart' as mdns;
 import 'package:web_socket/web_socket.dart';
+import '/main.dart';
 import '/model/message.dart';
 import '/pages/home.dart';
 
@@ -23,7 +26,11 @@ Future<List<mdns.Service>> scanForDevices() async {
   final Completer<List<mdns.Service>> completer = Completer();
 
   discovery.addListener(() {
-    completer.complete(discovery.services);
+    completer.complete(
+      discovery.services
+          .where((s) => s.name != '@$username on ${Platform.operatingSystem}')
+          .toList(),
+    );
   });
 
   return Future.any([
@@ -39,19 +46,19 @@ Future<void> connectToDevice(mdns.Service service) async {
     Uri.parse('ws://${service.host}:${service.port}'),
   );
   wsClient = null;
-  messages.add(
+  addMessage(
     ChatMessage("Connected to ${service.name}", 'system', DateTime.now()),
   );
 
   socket?.events.listen((event) async {
     switch (event) {
       case TextDataReceived(text: final text):
-        messages.add(ChatMessage.fromJson(text));
+        addMessage(ChatMessage.fromJson(text));
         break;
       case BinaryDataReceived():
         break;
       case CloseReceived(code: _, reason: _):
-        messages.add(
+        addMessage(
           ChatMessage(
             'Connection closed by the remote peer',
             'system',
@@ -73,7 +80,7 @@ void sendToServer(ChatMessage msg) {
 Future<void> disconnectFromDevice() async {
   if (socket != null) {
     await socket!.close();
-    messages.add(
+    addMessage(
       ChatMessage('Disconnected from remote peer', 'system', DateTime.now()),
     );
     socket = null;

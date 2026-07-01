@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+import '/main.dart';
+
 import '/api/scan.dart';
 import '/model/message.dart';
 import '/pages/home.dart';
@@ -18,12 +21,12 @@ Future<void> startServer() async {
         wsClient = ws;
         socket = null;
         connected = true;
-        messages.add(
+        addMessage(
           ChatMessage('Received a new connection', 'system', DateTime.now()),
         );
         ws.listen(
           (data) {
-            messages.add(ChatMessage.fromJson(data));
+            addMessage(ChatMessage.fromJson(data));
           },
           onDone: () {
             wsClient = null;
@@ -52,9 +55,10 @@ Future<void> stopServer() async {
 Future<void> startAdvertising() async {
   reg = await mdns.register(
     mdns.Service(
-      name: 'DNSChat on ${Platform.operatingSystem}',
+      name: '@$username on ${Platform.operatingSystem}',
       type: '_dnschat._tcp',
       port: PORT,
+      txt: {'session_id': Uint8List.fromList(SESSION_ID.codeUnits)},
     ),
   );
 }

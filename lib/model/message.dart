@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:dnschat/pages/home.dart';
+import '/pages/home.dart';
 
 class ChatMessage {
   final String text;
@@ -8,6 +8,7 @@ class ChatMessage {
   final DateTime timestamp;
 
   bool get isMine => sender == username;
+  bool get isSystem => sender == 'system';
 
   ChatMessage(this.text, this.sender, this.timestamp);
 
