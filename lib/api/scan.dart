@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 import '/api/advertise.dart';
 import 'package:flutter/material.dart';
 import 'package:nsd/nsd.dart' as mdns;
 import 'package:web_socket/web_socket.dart';
-import '/main.dart';
 import '/model/message.dart';
 import '/pages/home.dart';
 
@@ -14,7 +11,10 @@ bool _connectionCache = false;
 set connected(bool v) {
   _connectionCache = v;
   _connectionStream.add(v);
-  if (searchDialogCtx != null && v) Navigator.pop(searchDialogCtx!);
+  if (searchDialogCtx != null && v) {
+    Navigator.pop(searchDialogCtx!);
+    searchDialogCtx = null;
+  }
 }
 
 bool get connected => _connectionCache;

@@ -66,6 +66,7 @@ class _HomePageState extends State<HomePage> {
 
     _chatInputCtrl.dispose();
     _chatInputFocusNode.dispose();
+    _setState = null;
     super.dispose();
   }
 
@@ -127,6 +128,7 @@ class _HomePageState extends State<HomePage> {
                     content: SizedBox(
                       width: double.maxFinite,
                       child: SizedBox.square(
+                        dimension: 100,
                         child: const CircularProgressIndicator(),
                       ),
                     ),
@@ -150,9 +152,6 @@ class _HomePageState extends State<HomePage> {
                                 connecting = true;
                               });
                               await connectToDevice(service);
-                              setStateJr(() {
-                                connecting = false;
-                              });
                             },
                           );
                         },
@@ -204,8 +203,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    refreshConnected = () =>
-        setState(() => connected = socket != null || wsClient != null);
+    refreshConnected = () => connected = socket != null || wsClient != null;
     return Scaffold(
       appBar: AppBar(
         title: Text('DNSChat'),
