@@ -11,6 +11,7 @@ Function? _setState;
 List<ChatMessage> messages = [];
 String username = 'default';
 BuildContext? searchDialogCtx;
+bool connecting = false;
 
 Function refreshConnected = () {};
 
@@ -31,7 +32,7 @@ class _HomePageState extends State<HomePage> {
   late final TextEditingController _chatInputCtrl;
   late final FocusNode _chatInputFocusNode;
 
-  late Future<List<mdns.Service>> _scannedDevices;
+  late Stream<List<mdns.Service>> _scannedDevices;
 
   @override
   void initState() {
@@ -93,7 +94,6 @@ class _HomePageState extends State<HomePage> {
 
   void _scan() async {
     _scannedDevices = scanForDevices();
-    bool connecting = false;
     await showDialog(
       context: context,
       builder: (context) {
@@ -105,19 +105,14 @@ class _HomePageState extends State<HomePage> {
               return AlertDialog(
                 icon: Icon(Icons.search),
                 title: Text('Search for devices...'),
-                content: SizedBox(
-                  width: double.maxFinite,
-                  child: SizedBox.square(
-                    child: const CircularProgressIndicator(),
-                  ),
-                ),
+                content: const CircularProgressIndicator(),
               );
             }
-            return FutureBuilder(
-              future: _scannedDevices,
+            return StreamBuilder(
+              stream: _scannedDevices,
               builder: (context, snapshot) {
                 print(
-                  'Future building, ${snapshot.connectionState}, ${snapshot.hasData}, $loadedData',
+                  'Stream building, ${snapshot.connectionState}, ${snapshot.hasData}, $loadedData',
                 );
                 if (snapshot.hasError) return Text('Error: ${snapshot.error}');
                 if (snapshot.connectionState == ConnectionState.waiting) {

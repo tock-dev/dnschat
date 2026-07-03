@@ -21,31 +21,30 @@ bool get connected => _connectionCache;
 
 WebSocket? socket;
 
-Future<List<mdns.Service>> scanForDevices() async {
+Stream<List<mdns.Service>> scanForDevices() async* {
   final discovery = await mdns.startDiscovery(SERVICE_TYPE);
-  final Completer<List<mdns.Service>> completer = Completer();
+  final StreamController<List<mdns.Service>> controller = StreamController();
 
   void listener() {
     print(
       'Discovered devices: ${discovery.services.map((e) => e.name).toList()}',
     );
-    completer.complete(
+    controller.add(
       discovery.services.where((s) => s.name != deviceName).toList(),
     );
   }
 
   discovery.addListener(listener);
 
-  var f = await Future.any([
-    completer.future,
-    _connectionStream.stream
-        .firstWhere((v) => v == true)
-        .then((_) => <mdns.Service>[]),
-  ]);
-  discovery.removeListener(listener);
-  mdns.stopDiscovery(discovery);
+  _connectionStream.stream.firstWhere((v) => v == true).then((_) async {
+    await controller.close();
+    discovery.removeListener(listener);
+    await mdns.stopDiscovery(discovery);
+  });
 
-  return f;
+  await for (final event in controller.stream) {
+    yield event;
+  }
 }
 
 Future<void> connectToDevice(mdns.Service service) async {
@@ -86,6 +85,7 @@ Future<void> connectToDevice(mdns.Service service) async {
   });
 
   refreshConnected();
+  connecting = false;
 }
 
 void sendToServer(ChatMessage msg) {
