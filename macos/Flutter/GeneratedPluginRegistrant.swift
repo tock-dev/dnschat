@@ -5,10 +5,12 @@
 import FlutterMacOS
 import Foundation
 
+import device_info_plus
 import network_info_plus
 import nsd_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
   NetworkInfoPlusPlugin.register(with: registry.registrar(forPlugin: "NetworkInfoPlusPlugin"))
   NsdMacosPlugin.register(with: registry.registrar(forPlugin: "NsdMacosPlugin"))
 }

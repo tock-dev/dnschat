@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   async: ^2.13.1
+  device_info_plus: ^13.2.0
   flutter:
     sdk: flutter
   get_storage: ^2.1.1
@@ -15,7 +16,6 @@ dependencies:
   network_info_plus: ^8.2.0
   nsd: ^5.0.1
   oktoast: ^3.4.0
-  uuid: ^4.5.3
   web_socket: ^1.0.1
 
 dev_dependencies:

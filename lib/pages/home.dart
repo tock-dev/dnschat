@@ -27,15 +27,20 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final TextEditingController _chatInputCtrl;
+  late final FocusNode _chatInputFocusNode;
+
+  late Future<List<mdns.Service>> _scannedDevices;
 
   @override
   void initState() {
     (() async {
       await startServer();
       await startAdvertising();
+      print('Successfully started WebSockets & mDNS servers');
     })();
 
     _chatInputCtrl = TextEditingController();
+    _chatInputFocusNode = FocusNode();
 
     _setState = setState;
 
@@ -58,11 +63,15 @@ class _HomePageState extends State<HomePage> {
     })();
 
     _chatInputCtrl.dispose();
+    _chatInputFocusNode.dispose();
     super.dispose();
   }
 
   void _sendMessage() {
-    if (!connected) return;
+    if (!connected) {
+      showToast('Not connected');
+      return;
+    }
 
     final text = _chatInputCtrl.text;
     if (text.isEmpty) return;
@@ -80,6 +89,119 @@ class _HomePageState extends State<HomePage> {
       print('No connection');
       showToast('Not connected');
     }
+
+    FocusScope.of(context).requestFocus(_chatInputFocusNode);
+  }
+
+  void _scan() async {
+    _scannedDevices = scanForDevices();
+    bool connecting = false;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        searchDialogCtx = context;
+        bool loadedData = false;
+        return StatefulBuilder(
+          builder: (context, setStateJr) {
+            if (connecting)
+              return AlertDialog(
+                icon: Icon(Icons.search),
+                title: Text('Search for devices...'),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: SizedBox.square(
+                    child: const CircularProgressIndicator(),
+                  ),
+                ),
+              );
+            return FutureBuilder(
+              future: _scannedDevices,
+              builder: (context, snapshot) {
+                print(
+                  'Future building, ${snapshot.connectionState}, ${snapshot.hasData}, $loadedData',
+                );
+                if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  loadedData = false;
+                  return AlertDialog(
+                    icon: Icon(Icons.search),
+                    title: Text('Search for devices...'),
+                    content: SizedBox(
+                      width: double.maxFinite,
+                      child: SizedBox.square(
+                        child: const CircularProgressIndicator(),
+                      ),
+                    ),
+                  );
+                } else {
+                  loadedData = true;
+                  return AlertDialog(
+                    icon: Icon(Icons.search),
+                    title: Text('Search for devices...'),
+                    content: SizedBox(
+                      width: double.maxFinite,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          final service = snapshot.data![index];
+                          return ListTile(
+                            title: Text(service.name ?? 'No name specified'),
+                            onTap: () async {
+                              setStateJr(() {
+                                connecting = true;
+                              });
+                              await connectToDevice(service);
+                              setStateJr(() {
+                                connecting = false;
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
+                    actions: [
+                      TextButton(
+                        onPressed: loadedData
+                            ? () => setStateJr(() {
+                                _scannedDevices = scanForDevices();
+                                loadedData = false;
+                              })
+                            : null,
+                        child: Text('Refresh'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('Close'),
+                      ),
+                    ],
+                  );
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+    searchDialogCtx = null;
+    if (mounted) setState(() {});
+  }
+
+  void _saveUsername([String? value]) async {
+    username = value ?? username;
+    box.write('username', username);
+
+    await stopAdvertising();
+    await startAdvertising();
+
+    setState(() {
+      Navigator.pop(context);
+    });
+
+    print('Saved username: $username');
   }
 
   @override
@@ -99,26 +221,12 @@ class _HomePageState extends State<HomePage> {
                       TextField(
                         controller: TextEditingController(text: username),
                         onChanged: (value) => username = value,
-                        onSubmitted: (value) {
-                          username = value;
-                          setState(() {
-                            box.write('username', username);
-                            Navigator.pop(context);
-                          });
-                        },
+                        onSubmitted: _saveUsername,
                       ),
                     ],
                   ),
                   actions: [
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          box.write('username', username);
-                          Navigator.pop(context);
-                        });
-                      },
-                      child: Text('Close'),
-                    ),
+                    TextButton(onPressed: _saveUsername, child: Text('Close')),
                   ],
                 ),
               );
@@ -209,91 +317,7 @@ class _HomePageState extends State<HomePage> {
                     right: 10,
                     bottom: 10,
                     child: FloatingActionButton(
-                      onPressed: () async {
-                        await showDialog(
-                          context: context,
-                          builder: (context) {
-                            searchDialogCtx = context;
-                            bool loadedData = false;
-                            return StatefulBuilder(
-                              builder: (context, setStateJr) {
-                                return FutureBuilder(
-                                  future: scanForDevices(),
-                                  builder: (context, snapshot) {
-                                    print(
-                                      'Future building, ${snapshot.connectionState}, ${snapshot.hasData}, $loadedData',
-                                    );
-                                    if (snapshot.hasError)
-                                      return Text('Error: ${snapshot.error}');
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      loadedData = false;
-                                      return AlertDialog(
-                                        icon: Icon(Icons.search),
-                                        title: Text('Search for devices...'),
-                                        content: SizedBox(
-                                          width: double.maxFinite,
-                                          child:
-                                              const CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    } else {
-                                      loadedData = true;
-                                      return AlertDialog(
-                                        icon: Icon(Icons.search),
-                                        title: Text('Search for devices...'),
-                                        content: SizedBox(
-                                          width: double.maxFinite,
-                                          child: ListView.builder(
-                                            shrinkWrap: true,
-                                            itemCount: snapshot.data!.length,
-                                            itemBuilder: (context, index) {
-                                              final service =
-                                                  snapshot.data![index];
-                                              return ListTile(
-                                                title: Text(
-                                                  service.name ??
-                                                      'No name specified',
-                                                ),
-                                                onTap: () async {
-                                                  await connectToDevice(
-                                                    service,
-                                                  );
-                                                  setState(() {});
-                                                },
-                                              );
-                                            },
-                                          ),
-                                        ),
-
-                                        actions: [
-                                          TextButton(
-                                            onPressed: loadedData
-                                                ? () => setStateJr(() {
-                                                    loadedData = false;
-                                                  })
-                                                : null,
-                                            child: Text('Refresh'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                Navigator.pop(context);
-                                              });
-                                            },
-                                            child: Text('Close'),
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        );
-                        searchDialogCtx = null;
-                      },
+                      onPressed: _scan,
                       shape: CircleBorder(),
                       child: Icon(Icons.search),
                     ),
@@ -302,6 +326,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             TextField(
+              autofocus: true,
+              focusNode: _chatInputFocusNode,
               controller: _chatInputCtrl,
               onSubmitted: (_) => _sendMessage(),
               decoration: InputDecoration(

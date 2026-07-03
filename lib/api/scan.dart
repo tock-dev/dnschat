@@ -22,14 +22,15 @@ bool get connected => _connectionCache;
 WebSocket? socket;
 
 Future<List<mdns.Service>> scanForDevices() async {
-  final discovery = await mdns.startDiscovery('_dnschat._tcp');
+  final discovery = await mdns.startDiscovery(SERVICE_TYPE);
   final Completer<List<mdns.Service>> completer = Completer();
 
   discovery.addListener(() {
+    print(
+      'Discovered devices: ${discovery.services.map((e) => e.name).toList()}',
+    );
     completer.complete(
-      discovery.services
-          .where((s) => s.name != '@$username on ${Platform.operatingSystem}')
-          .toList(),
+      discovery.services.where((s) => s.name != deviceName).toList(),
     );
   });
 
@@ -49,6 +50,9 @@ Future<void> connectToDevice(mdns.Service service) async {
   addMessage(
     ChatMessage("Connected to ${service.name}", 'system', DateTime.now()),
   );
+  socket!.sendText(deviceName);
+  stopAdvertising();
+  stopServer();
 
   socket?.events.listen((event) async {
     switch (event) {
@@ -66,6 +70,8 @@ Future<void> connectToDevice(mdns.Service service) async {
           ),
         );
         connected = false;
+        startServer();
+        startAdvertising();
         break;
     }
   });
