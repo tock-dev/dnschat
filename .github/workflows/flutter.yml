@@ -65,7 +65,7 @@ jobs:
       - name: List files (Debug)
         run: ls -R build/
       - name: Archive - Multi-platform
-        if: matrix.flutter_os != 'windows'
+        if: matrix.flutter_os != 'windows' && matrix.archive_path != -1
         run: |
           original_path=$(pwd)
           cd ${{ matrix.archive_path }}
