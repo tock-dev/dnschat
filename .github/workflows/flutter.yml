@@ -85,11 +85,10 @@ jobs:
       # - name: List files (Debug)
       #   run: ls -R build/
       - name: Install Modern Bash on macOS
-        if: matrix.flutter_os == 'macos'
-        run: |
-          brew update
-          brew install bash
-          echo "$(brew --prefix)/bin" >> $GITHUB_PATH
+        uses: tecolicom/actions-use-homebrew-tools@v1
+        continue-on-error: true
+        with:
+          tools: bash
       - name: Archive - Multi-platform
         if: matrix.flutter_os != 'windows' && matrix.archive_path != -1
         shell: bash
