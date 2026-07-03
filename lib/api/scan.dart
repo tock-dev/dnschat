@@ -43,6 +43,7 @@ Future<List<mdns.Service>> scanForDevices() async {
         .then((_) => <mdns.Service>[]),
   ]);
   discovery.removeListener(listener);
+  mdns.stopDiscovery(discovery);
 
   return f;
 }
@@ -58,7 +59,6 @@ Future<void> connectToDevice(mdns.Service service) async {
     ChatMessage("Connected to ${service.name}", 'system', DateTime.now()),
   );
   socket!.sendText(deviceName);
-  connected = true;
 
   stopAdvertising();
   stopServer();
@@ -84,6 +84,8 @@ Future<void> connectToDevice(mdns.Service service) async {
         break;
     }
   });
+
+  refreshConnected();
 }
 
 void sendToServer(ChatMessage msg) {
@@ -99,5 +101,5 @@ Future<void> disconnectFromDevice() async {
     socket = null;
   }
 
-  connected = false;
+  refreshConnected();
 }

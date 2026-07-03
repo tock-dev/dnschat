@@ -12,6 +12,8 @@ List<ChatMessage> messages = [];
 String username = 'default';
 BuildContext? searchDialogCtx;
 
+Function refreshConnected = () {};
+
 void addMessage(ChatMessage msg) {
   messages.add(msg);
 
@@ -68,11 +70,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _sendMessage() {
-    if (!connected) {
-      showToast('Not connected');
-      return;
-    }
-
     final text = _chatInputCtrl.text;
     if (text.isEmpty) return;
 
@@ -207,6 +204,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    refreshConnected = () =>
+        setState(() => connected = socket != null || wsClient != null);
     return Scaffold(
       appBar: AppBar(
         title: Text('DNSChat'),

@@ -25,7 +25,7 @@ Future<void> startServer() async {
       WebSocketTransformer.upgrade(req).then((ws) {
         wsClient = ws;
         socket = null;
-        connected = true;
+        refreshConnected();
         ws.listen(
           (data) {
             if (chattingWith == null) {
@@ -43,7 +43,7 @@ Future<void> startServer() async {
           },
           onDone: () {
             wsClient = null;
-            connected = false;
+            refreshConnected();
             chattingWith = null;
           },
         );
@@ -63,7 +63,7 @@ Future<void> stopServer() async {
     wsClient = null;
   }
 
-  connected = false;
+  refreshConnected();
 }
 
 Future<void> startAdvertising() async {
