@@ -58,10 +58,12 @@ Future<void> connectToDevice(mdns.Service service) async {
     ChatMessage("Connected to ${service.name}", 'system', DateTime.now()),
   );
   socket!.sendText(deviceName);
+  connected = true;
+
   stopAdvertising();
   stopServer();
 
-  socket?.events.listen((event) async {
+  socket!.events.listen((event) async {
     switch (event) {
       case TextDataReceived(text: final text):
         addMessage(ChatMessage.fromJson(text));
@@ -76,14 +78,12 @@ Future<void> connectToDevice(mdns.Service service) async {
             DateTime.now(),
           ),
         );
-        connected = false;
+        disconnectFromDevice();
         startServer();
         startAdvertising();
         break;
     }
   });
-
-  connected = true;
 }
 
 void sendToServer(ChatMessage msg) {

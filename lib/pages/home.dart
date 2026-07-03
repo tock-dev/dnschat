@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
         bool loadedData = false;
         return StatefulBuilder(
           builder: (context, setStateJr) {
-            if (connecting)
+            if (connecting) {
               return AlertDialog(
                 icon: Icon(Icons.search),
                 title: Text('Search for devices...'),
@@ -114,6 +114,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               );
+            }
             return FutureBuilder(
               future: _scannedDevices,
               builder: (context, snapshot) {
