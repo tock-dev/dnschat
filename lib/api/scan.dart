@@ -25,19 +25,26 @@ Future<List<mdns.Service>> scanForDevices() async {
   final discovery = await mdns.startDiscovery(SERVICE_TYPE);
   final Completer<List<mdns.Service>> completer = Completer();
 
-  discovery.addListener(() {
+  void listener() {
     print(
       'Discovered devices: ${discovery.services.map((e) => e.name).toList()}',
     );
     completer.complete(
       discovery.services.where((s) => s.name != deviceName).toList(),
     );
-  });
+  }
 
-  return Future.any([
+  discovery.addListener(listener);
+
+  var f = await Future.any([
     completer.future,
-    _connectionStream.stream.firstWhere((v) => v == true).then((_) => []),
+    _connectionStream.stream
+        .firstWhere((v) => v == true)
+        .then((_) => <mdns.Service>[]),
   ]);
+  discovery.removeListener(listener);
+
+  return f;
 }
 
 Future<void> connectToDevice(mdns.Service service) async {

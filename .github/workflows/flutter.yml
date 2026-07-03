@@ -31,11 +31,11 @@ jobs:
             archive_path: build\windows\x64\runner\Release
             artifact_name: release.zip
             asset_name: dnschat-windows-${{ github.ref_name }}.zip
-          # - os: macos-latest
-          #   flutter_os: macos
-          #   archive_path: -1
-          #   artifact_name: build/macos/Build/Products/Release/release.app
-          #   asset_name: dnschat-macos-${{ github.ref_name }}.app
+          - os: macos-latest
+            flutter_os: macos
+            archive_path: build/macos/Build/Products/Release/dnschat.app
+            artifact_name: release.tar.gz
+            asset_name: dnschat-macos-${{ github.ref_name }}.tar.gz
           # - os: macos-latest
           #   flutter_os: ios
           #   archive_path: build/ios/ipa/
@@ -53,19 +53,46 @@ jobs:
           channel: stable
           cache: true
           pub-cache: true
-      - name: Linux dependencies
+      - name: Prepare APT
         if: matrix.flutter_os == 'linux'
         run: |
           sudo apt update -y
-          sudo apt install -y ninja-build libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Linux dependencies
+        if: matrix.flutter_os == 'linux'
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ninja-build libgtk-3-dev libwebkit2gtk-4.1-dev
+          version: 1.0
+      - name: Create temporary keychain
+        if: matrix.flutter_os == 'macos'
+        continue-on-error: true
+        run: |
+          KEYCHAIN_NAME=temp_build.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          echo "Creating temporary keychain: $KEYCHAIN_NAME"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security list-keychains -d user -s "$KEYCHAIN_NAME"
+          echo "password=$KEYCHAIN_PASSWORD" >> $GITHUB_OUTPUT
+          echo "FASTLANE_KEYCHAIN_PATH=$KEYCHAIN_NAME" >> $GITHUB_ENV
+          echo "FASTLANE_KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
       - name: Build
         run: |
           flutter pub get
           flutter build ${{ matrix.flutter_os }}
-      - name: List files (Debug)
-        run: ls -R build/
+      # - name: List files (Debug)
+      #   run: ls -R build/
+      - name: Install Modern Bash on macOS
+        if: matrix.flutter_os == 'macos'
+        run: |
+          brew update
+          brew install bash
+          echo "$(brew --prefix)/bin" >> $GITHUB_PATH
       - name: Archive - Multi-platform
         if: matrix.flutter_os != 'windows' && matrix.archive_path != -1
+        shell: bash
         run: |
           original_path=$(pwd)
           cd ${{ matrix.archive_path }}
@@ -86,3 +113,10 @@ jobs:
           file: ${{ matrix.artifact_name }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+      - name: Delete temporary keychain
+        if: matrix.flutter_os == 'macos'
+        continue-on-error: true
+        run: |
+          KEYCHAIN_NAME=temp_build.keychain-db
+          echo "Deleting keychain $KEYCHAIN_NAME"
+          security delete-keychain "$KEYCHAIN_NAME" || echo "Keychain not found or already deleted"
