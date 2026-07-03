@@ -33,7 +33,7 @@ jobs:
             asset_name: dnschat-windows-${{ github.ref_name }}.zip
           - os: macos-latest
             flutter_os: macos
-            archive_path: build/macos/Build/Products/Release/dnschat.app
+            archive_path: build/macos/Build/Products/Release/
             artifact_name: release.tar.gz
             asset_name: dnschat-macos-${{ github.ref_name }}.tar.gz
           # - os: macos-latest
