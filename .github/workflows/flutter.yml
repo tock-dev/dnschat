@@ -33,9 +33,10 @@ jobs:
             asset_name: dnschat-windows-${{ github.ref_name }}.zip
           - os: macos-latest
             flutter_os: macos
-            archive_path: build/macos/Build/Products/Release/
-            artifact_name: release.tar.gz
-            asset_name: dnschat-macos-${{ github.ref_name }}.tar.gz
+            archive_path: build/macos/Build/Products/Release/dnschat.app
+            dmg_name: release
+            artifact_name: release.dmg
+            asset_name: dnschat-macos-${{ github.ref_name }}.dmg
           # - os: macos-latest
           #   flutter_os: ios
           #   archive_path: build/ios/ipa/
@@ -90,7 +91,10 @@ jobs:
         with:
           tools: bash
       - name: Archive - Multi-platform
-        if: matrix.flutter_os != 'windows' && matrix.archive_path != -1
+        if: >
+          matrix.flutter_os != 'windows' &&
+          matrix.flutter_os != 'macos' &&
+          matrix.archive_path != -1
         shell: bash
         run: |
           original_path=$(pwd)
@@ -105,6 +109,12 @@ jobs:
           cd /d "${{ matrix.archive_path }}"
           tar -a -c -f "%ORIGINAL_PATH%/${{ matrix.artifact_name }}" *
           cd /d "%ORIGINAL_PATH%"
+      - name: Archive - MacOS
+        if: matrix.flutter_os == 'macos'
+        uses: L-Super/create-dmg-actions@v1
+        with:
+          dmg_name: ${{ matrix.dmg_name }}
+          src_dir: ${{ matrix.archive_path }}
       - name: Upload
         uses: svenstaro/upload-release-action@v2
         with:
