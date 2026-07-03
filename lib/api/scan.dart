@@ -60,8 +60,8 @@ Future<void> connectToDevice(mdns.Service service) async {
   );
   socket!.sendText(deviceName);
 
-  stopAdvertising();
-  stopServer();
+  await stopAdvertising();
+  await stopServer();
 
   socket!.events.listen((event) async {
     switch (event) {
@@ -78,9 +78,9 @@ Future<void> connectToDevice(mdns.Service service) async {
             DateTime.now(),
           ),
         );
-        disconnectFromDevice();
-        startServer();
-        startAdvertising();
+        await disconnectFromDevice();
+        await startServer();
+        await startAdvertising();
         break;
     }
   });

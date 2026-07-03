@@ -81,11 +81,11 @@ jobs:
           echo "FASTLANE_KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
       - name: Build
         run: |
-          flutter pub get
-          flutter build ${{ matrix.flutter_os }}
+          flutter build ${{ matrix.flutter_os }} --release
       # - name: List files (Debug)
       #   run: ls -R build/
       - name: Install Modern Bash on macOS
+        if: matrix.flutter_os == 'macos'
         uses: tecolicom/actions-use-homebrew-tools@v1
         continue-on-error: true
         with:
